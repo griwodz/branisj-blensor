@@ -266,8 +266,8 @@ def scan_range(scanner_object, frame_start, frame_end, filename="/tmp/landscape.
 
                 if not ok:
                     break
-    except:
-        print ("Scan aborted")
+    except BaseException as e:
+        print(f"Scan aborted. {e.with_traceback(e)}")
 
 
     if last_frame:

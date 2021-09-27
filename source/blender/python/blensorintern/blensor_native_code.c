@@ -496,6 +496,8 @@ static void do_blensor(Render *re, float *rays, int raycount, int elements_per_r
         returns[idx*BLENSOR_ELEMENTS_PER_RETURN+5] = intersection[12]; //r-value
         returns[idx*BLENSOR_ELEMENTS_PER_RETURN+6] = intersection[13]; //g-value
         returns[idx*BLENSOR_ELEMENTS_PER_RETURN+7] = intersection[14]; //b-value
+
+        // it looks like intersection[7, 8, 9] is the face normal
         
         if (raydistance <= maxdist && valid_signal != 0)
         {   

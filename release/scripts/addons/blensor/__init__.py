@@ -116,6 +116,10 @@ def velodyne_layout(obj, layout):
             row = layout.row()
             col = row.column()
             col.prop(obj, "velodyne_ref_slope")
+            row = layout.row()
+            col = row.column()
+            col.prop(obj, "velodyne_output_laser_id_as_color")
+
 
 
 def tof_layout(obj, layout):
@@ -263,7 +267,8 @@ def dispatch_scan(obj, filename=None, output_labels=True):
                   noise_sigma=obj.velodyne_noise_sigma, add_blender_mesh=obj.add_scan_mesh, 
                   add_noisy_blender_mesh=obj.add_noise_scan_mesh, 
                   rotation_speed = obj.velodyne_rotation_speed, evd_file=filename,
-                  world_transformation = world_transformation )
+                  world_transformation = world_transformation,
+                  output_laser_id_as_color=obj.velodyne_output_laser_id_as_color)
 
             elif obj.scan_type == "ibeo":
                 obj.ref_dist = obj.ibeo_ref_dist
@@ -334,7 +339,8 @@ def dispatch_scan_range(obj,filename,frame=0,last_frame=True, time_per_frame=1.0
                   noise_sigma=obj.velodyne_noise_sigma,  rotation_speed = obj.velodyne_rotation_speed, 
                   frame_start = frame, frame_end=frame+1, filename=filename, last_frame=last_frame, 
                   frame_time=time_per_frame, world_transformation=world_transformation,
-                  add_blender_mesh=obj.add_scan_mesh, add_noisy_blender_mesh=obj.add_noise_scan_mesh)
+                  add_blender_mesh=obj.add_scan_mesh, add_noisy_blender_mesh=obj.add_noise_scan_mesh,
+                  output_laser_id_as_color=obj.velodyne_output_laser_id_as_color)
 
             elif obj.scan_type == "ibeo":
                 ibeo.scan_range(scanner_object = obj, angle_resolution=obj.ibeo_angle_resolution,

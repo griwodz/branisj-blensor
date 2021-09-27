@@ -181,7 +181,7 @@ class evd_file:
           self.writePGMFile()
         else:
           # At this point, filename is stripped of the extension
-          evd = open(f"{self.filename}.evd", "a")
+          evd = open(f"{self.filename}", "a")
           evd.buffer.write(struct.pack("i", len(self.buffer)))
           idx = 0
           for e in self.buffer:

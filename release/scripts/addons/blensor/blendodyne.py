@@ -6,6 +6,15 @@
 # Distance accuracy (sigma): 2cm
 # Range: 50m (~0.1 reflectivity), 120m (~0.8 reflectivity)
 
+# Laser Information for Velodyne VLP-16:
+# Wavelength: 903 nm
+# Pulse length: 6 nanoseconds
+# Angular resolution (horizontal): 0.1 - 0.4 deg
+# Angular resolution (vertical): 2 deg
+# Distance accuracy (typical, sigma): 3cm
+# Range: up to 100m
+# Rotation: between 300 and 1200 RPM with 60 RPM increments
+# the angular resolution in the azimuth depends on the RPM (see manual)
 
 import math
 import sys
@@ -25,17 +34,40 @@ import numpy
 
 BLENSOR_VELODYNE_HDL64E2 = "hdl64e2"
 BLENSOR_VELODYNE_HDL32E = "hdl32e"
+BLENSOR_VELODYNE_VLP16 = "vlp16"
+
 
 
 parameters = {"angle_resolution":0.1728, "rotation_speed":10,"max_dist":120,"noise_mu":0.0,"noise_sigma":0.01,
               "start_angle":0,"end_angle":360, "distance_bias_noise_mu": 0, "distance_bias_noise_sigma": 0.078,
               "reflectivity_distance":50,"reflectivity_limit":0.1,"reflectivity_slope":0.01,
               "noise_types": [("gaussian", "Gaussian", "Gaussian distribution (mu/simga)"),("laplace","Laplace","Laplace distribution (sigma=b)")],
-              "models": [(BLENSOR_VELODYNE_HDL64E2, "HDL-64E2", "HDL-64E2"), (BLENSOR_VELODYNE_HDL32E, "HDL-32E", "HDL-32E")]}
+              "models": [(BLENSOR_VELODYNE_HDL64E2, "HDL-64E2", "HDL-64E2"), (BLENSOR_VELODYNE_HDL32E, "HDL-32E", "HDL-32E"), (BLENSOR_VELODYNE_VLP16, "VLP-16", "VLP-16")],
+              "output_laser_id_as_color": False}
+
+
+vlp16_parameters = {
+    "angle_resolution": 0.2,
+    "rotation_speed": 10, # in Hz, equivalent to 600 RPM
+    "max_dist": 100,
+    "noise_mu": 0.0,
+    "noise_sigma": 0.01,
+    "start_angle": 0,
+    "end_angle": 360,
+    "distance_bias_noise_mu": 0,
+    "distance_bias_noise_sigma": 0.078,
+    "reflectivity_distance": 50,
+    "reflectivity_limit": 0.1,
+    "reflectivity_slope": 0.01,
+    "noise_types": [("gaussian", "Gaussian", "Gaussian distribution (mu/simga)"),
+                    ("laplace", "Laplace", "Laplace distribution (sigma=b)")],
+    "models": [(BLENSOR_VELODYNE_HDL64E2, "HDL-64E2", "HDL-64E2"), (BLENSOR_VELODYNE_HDL32E, "HDL-32E", "HDL-32E"),
+               (BLENSOR_VELODYNE_VLP16, "VLP-16", "VLP-16")]
+}
 
 def addProperties(cType):
     global parameters
-    cType.velodyne_angle_resolution = bpy.props.FloatProperty( name = "Scanresolution", default = parameters["angle_resolution"], min = 0.01, max = 3.141, description = "How far(angle) two scan lines are apart" )
+    cType.velodyne_angle_resolution = bpy.props.FloatProperty( name = "Scan resolution", default = parameters["angle_resolution"], min = 0.01, max = 3.141, description = "How far(angle) two scan lines are apart" )
     cType.velodyne_rotation_speed = bpy.props.FloatProperty( name = "Rotation speed", default = parameters["rotation_speed"], min = 1, max = 100, description = "Rotation speed in Hertz" )
     cType.velodyne_max_dist = bpy.props.FloatProperty( name = "Scan distance", default = parameters["max_dist"], min = 0, max = 1000, description = "How far the laser can see" )
     cType.velodyne_noise_mu = bpy.props.FloatProperty( name = "Noise mu", default = parameters["noise_mu"], description = "The center of the gaussian noise" )
@@ -51,6 +83,10 @@ def addProperties(cType):
  
     cType.velodyne_noise_type = bpy.props.EnumProperty( items= parameters["noise_types"], name = "Noise distribution", description = "Which noise model to use for the distance bias" )
     cType.velodyne_model = bpy.props.EnumProperty( items= parameters["models"], name = "Model", description = "Velodyne Model" )
+    cType.velodyne_output_laser_id_as_color = bpy.props.BoolProperty(default=parameters["output_laser_id_as_color"],
+                                                                     name="Output laser id as color",
+                                                                     description="If enabled, the laser ids will be returned as the color of a sample")
+
  
 
 
@@ -87,9 +123,12 @@ laser_angles_32 = [-30.67, -9.33, -29.33, -8.00, -28.00, -6.66, -26.66,
                    4.00, -16.00, 5.33, -14.67, 6.67, -13.33, 8.00,
                    -12.00, 9.33, -10.67, 10.67]
 
+# laser ID is index in list
+laser_angles_vlp16 = [-15, 1, -13, 3, -11, 5, -9, 7, -7, 9, -5, 11, -3, 13, -1, 15]
+
 
 # The laser noise is initialized with a fixed randomized array to increase
-# repoducibility. If the noise should be randomize, call 
+# reproducibility. If the noise should be randomize, call 
 # randomize_distance_bias
 laser_noise =  [0.023188431056485468, 0.018160539830319688, 
                -0.082857233607375583, -0.064524698320918547, 
@@ -146,13 +185,20 @@ def randomize_distance_bias(scanner_object, noise_mu = 0.0, noise_sigma = 0.04):
 @param world_transformation The transformation for the resulting pointcloud
 
 """
-def scan_advanced(scanner_object, rotation_speed = 10.0, simulation_fps=24, angle_resolution = 0.1728, max_distance = 120, evd_file=None,noise_mu=0.0, noise_sigma=0.03, start_angle = 0.0, end_angle = 360.0, evd_last_scan=True, add_blender_mesh = False, add_noisy_blender_mesh = False, frame_time = (1.0 / 24.0), simulation_time = 0.0, world_transformation=Matrix()):
+def scan_advanced(scanner_object, rotation_speed = 10.0, simulation_fps=24, angle_resolution = 0.1728, max_distance = 120, evd_file=None,noise_mu=0.0, noise_sigma=0.03, start_angle = 0.0, end_angle = 360.0, evd_last_scan=True, add_blender_mesh = False, add_noisy_blender_mesh = False, frame_time = (1.0 / 24.0), simulation_time = 0.0, world_transformation=Matrix(), output_laser_id_as_color=False):
     
+    # First, get the angles for the lasers, depends on the sensor model
     scanner_angles = laser_angles
+    # the scanner noise variable isn't used anywhere...
     scanner_noise = laser_noise
+
     if scanner_object.velodyne_model == BLENSOR_VELODYNE_HDL32E:
       scanner_angles = laser_angles_32
-    
+
+    if scanner_object.velodyne_model == BLENSOR_VELODYNE_VLP16:
+      scanner_angles = laser_angles_vlp16
+
+    # These flags control whether to invert the X, Y or Z coordinate
     inv_scan_x = scanner_object.inv_scan_x
     inv_scan_y = scanner_object.inv_scan_y
     inv_scan_z = scanner_object.inv_scan_z    
@@ -176,6 +222,7 @@ def scan_advanced(scanner_object, rotation_speed = 10.0, simulation_fps=24, angl
     angles = end_angle-start_angle
   
     lines = (end_angle-start_angle)/angle_resolution
+    # make a ray for each laser
     ray = Vector([0.0,0.0,0.0])
     for line in range(int(lines)):
         for laser_idx in range(len(scanner_angles)):
@@ -191,24 +238,47 @@ def scan_advanced(scanner_object, rotation_speed = 10.0, simulation_fps=24, angl
 
     returns = blensor.scan_interface.scan_rays(rays, max_distance, inv_scan_x = inv_scan_x, inv_scan_y = inv_scan_y, inv_scan_z = inv_scan_z)
 
+    # not sure what this was:
 #    for idx in range((len(rays)//3)):
     
     reusable_4dvector = Vector([0.0,0.0,0.0,0.0])
+    # structure of one return
+    # [<distance>, <x-coord>, <y-coord>, <z-coord>, <object-id>, <rgb-material>, <index>]
     
     for i in range(len(returns)):
         idx = returns[i][-1]
+        laser_id = idx % len(scanner_angles)
         reusable_4dvector.xyzw = (returns[i][1],returns[i][2],returns[i][3],1.0)
+
         vt = (world_transformation * reusable_4dvector).xyz
         v = [returns[i][1],returns[i][2],returns[i][3]]
 
-        distance_noise =  laser_noise[idx%len(scanner_angles)] + random.gauss(noise_mu, noise_sigma) 
+        # make distance noise based on the laser noise array and some gaussian
+        distance_noise =  laser_noise[laser_id] + random.gauss(noise_mu, noise_sigma) 
+
+        # vector length represents the distance between the scanned point and the sensor
+        # note: this is the same as the first element in the return array
+        # so why is it computed again??
         vector_length = math.sqrt(v[0]**2+v[1]**2+v[2]**2)
+
+        # normalize the vector
         norm_vector = [v[0]/vector_length, v[1]/vector_length, v[2]/vector_length]
+
+        # add the distance noise to the vector length
         vector_length_noise = vector_length+distance_noise
+
+        # multiply each component of the normalized vector with the same distance noise
         reusable_4dvector.xyzw=[norm_vector[0]*vector_length_noise, norm_vector[1]*vector_length_noise, norm_vector[2]*vector_length_noise,1.0]
+
+        # this is the same transformed vector as "vt", except with the noise added
         v_noise = (world_transformation * reusable_4dvector).xyz
 
-        evd_storage.addEntry(timestamp = ray_info[idx][2], yaw =(ray_info[idx][0]+math.pi)%(2*math.pi), pitch=ray_info[idx][1], distance=vector_length, distance_noise=vector_length_noise, x=vt[0], y=vt[1], z=vt[2], x_noise=v_noise[0], y_noise=v_noise[1], z_noise=v_noise[2], object_id=returns[i][4], color=returns[i][5])
+        if output_laser_id_as_color:
+            color = (laser_id / len(scanner_angles), laser_id / len(scanner_angles), laser_id / len(scanner_angles))
+        else:
+            color = returns[i][5]
+
+        evd_storage.addEntry(timestamp = ray_info[idx][2], yaw =(ray_info[idx][0]+math.pi)%(2*math.pi), pitch=ray_info[idx][1], distance=vector_length, distance_noise=vector_length_noise, x=vt[0], y=vt[1], z=vt[2], x_noise=v_noise[0], y_noise=v_noise[1], z_noise=v_noise[2], object_id=returns[i][4], color=color)
 
 
     current_angle = start_angle+float(float(int(lines))*angle_resolution)
@@ -225,9 +295,11 @@ def scan_advanced(scanner_object, rotation_speed = 10.0, simulation_fps=24, angl
             additional_data = evd_storage.buffer
 
         if add_blender_mesh:
+            # indices 5, 6, 7 are where the x,y,z coordinates are stored
             mesh_utils.add_mesh_from_points_tf(scan_data[:,5:8], "Scan", world_transformation, buffer=additional_data)
 
         if add_noisy_blender_mesh:
+            # indices 8, 9, 10 are where the noisy x,y,z coordinates are stored
             mesh_utils.add_mesh_from_points_tf(scan_data[:,8:11], "NoisyScan", world_transformation, buffer=additional_data) 
             
         bpy.context.scene.update()
@@ -244,7 +316,7 @@ def scan_advanced(scanner_object, rotation_speed = 10.0, simulation_fps=24, angl
 
 # This Function creates scans over a range of frames
 
-def scan_range(scanner_object, frame_start, frame_end, filename="/tmp/landscape.evd", frame_time = (1.0/24.0), rotation_speed = 10.0, add_blender_mesh=False, add_noisy_blender_mesh=False, angle_resolution = 0.1728, max_distance = 120.0, noise_mu = 0.0, noise_sigma= 0.02, last_frame = True, world_transformation=Matrix()):
+def scan_range(scanner_object, frame_start, frame_end, filename="/tmp/landscape.evd", frame_time = (1.0/24.0), rotation_speed = 10.0, add_blender_mesh=False, add_noisy_blender_mesh=False, angle_resolution = 0.1728, max_distance = 120.0, noise_mu = 0.0, noise_sigma= 0.02, last_frame = True, world_transformation=Matrix(), output_laser_id_as_color=False):
     start_time = time.time()
 
     angle_per_second = 360.0 * rotation_speed
@@ -262,12 +334,13 @@ def scan_range(scanner_object, frame_start, frame_end, filename="/tmp/landscape.
                     add_noisy_blender_mesh=add_noisy_blender_mesh, 
                     frame_time=frame_time, simulation_time = float(i)*frame_time,
                     max_distance=max_distance, noise_mu = noise_mu, 
-                    noise_sigma=noise_sigma, world_transformation=world_transformation)
+                    noise_sigma=noise_sigma, world_transformation=world_transformation,
+                    output_laser_id_as_color=output_laser_id_as_color)
 
                 if not ok:
                     break
     except BaseException as e:
-        print(f"Scan aborted. {e.with_traceback(e)}")
+        print(f"Scan aborted. {e.with_traceback()}")
 
 
     if last_frame:

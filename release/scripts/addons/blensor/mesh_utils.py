@@ -83,12 +83,12 @@ def add_mesh_from_points_tf(points, name="Scan", world_transformation = Matrix()
     mesh_object = bpy.data.objects.new("{0}.{1}".format(name,bpy.context.scene.frame_current), mesh)
     bpy.context.scene.objects.link(mesh_object)
 
-    scanner = bpy.context.object
+    scanner = bpy.data.objects['vlp16']
     if scanner.show_in_frame: 
       blensor.show_in_frame(mesh_object, bpy.context.scene.frame_current)
 
     if world_transformation == Matrix():
-       mesh_object.matrix_world = bpy.context.object.matrix_world
+       mesh_object.matrix_world = bpy.data.objects['vlp16'].matrix_world
 
 
 

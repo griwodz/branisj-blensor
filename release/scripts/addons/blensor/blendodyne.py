@@ -127,6 +127,10 @@ laser_angles_32 = [-30.67, -9.33, -29.33, -8.00, -28.00, -6.66, -26.66,
 laser_angles_vlp16 = [-15, 1, -13, 3, -11, 5, -9, 7, -7, 9, -5, 11, -3, 13, -1, 15]
 
 
+# in mm, see VLP-16 manual, these should be added to the z-axis
+vertical_corrections_vlp16 = [11.2, -0.7, 9.7, -2.2, 8.1, -3.7, 6.6, -5.1, 5.1, -6.6, 3.7, -8.1, 2.2, -9.7, 0.7, -11.2]
+
+
 # The laser noise is initialized with a fixed randomized array to increase
 # reproducibility. If the noise should be randomize, call 
 # randomize_distance_bias
@@ -185,7 +189,24 @@ def randomize_distance_bias(scanner_object, noise_mu = 0.0, noise_sigma = 0.04):
 @param world_transformation The transformation for the resulting pointcloud
 
 """
-def scan_advanced(scanner_object, rotation_speed = 10.0, simulation_fps=24, angle_resolution = 0.1728, max_distance = 120, evd_file=None,noise_mu=0.0, noise_sigma=0.03, start_angle = 0.0, end_angle = 360.0, evd_last_scan=True, add_blender_mesh = False, add_noisy_blender_mesh = False, frame_time = (1.0 / 24.0), simulation_time = 0.0, world_transformation=Matrix(), output_laser_id_as_color=False):
+def scan_advanced(scanner_object,
+                  rotation_speed = 10.0,
+                  simulation_fps=24,
+                  angle_resolution = 0.1728,
+                  max_distance = 120,
+                  evd_file=None,
+                  noise_mu=0.0,
+                  noise_sigma=0.03,
+                  start_angle = 0.0,
+                  end_angle = 360.0,
+                  evd_last_scan=True,
+                  add_blender_mesh = False,
+                  add_noisy_blender_mesh = False,
+                  frame_time = (1.0 / 24.0),
+                  simulation_time = 0.0,
+                  world_transformation=Matrix(),
+                  output_laser_id_as_color=False,
+                  apply_vertical_correction=False):
     
     # First, get the angles for the lasers, depends on the sensor model
     scanner_angles = laser_angles
@@ -227,6 +248,7 @@ def scan_advanced(scanner_object, rotation_speed = 10.0, simulation_fps=24, angl
     for line in range(int(lines)):
         for laser_idx in range(len(scanner_angles)):
             ray.xyz = [0,0,max_distance]
+
             rot_angle = 1e-6 + start_angle+float(line)*angle_resolution + 180.0
             timestamp = ( (rot_angle-180.0)/angle_resolution) * time_per_step 
             rot_angle = rot_angle%360.0
@@ -248,13 +270,23 @@ def scan_advanced(scanner_object, rotation_speed = 10.0, simulation_fps=24, angl
     for i in range(len(returns)):
         idx = returns[i][-1]
         laser_id = idx % len(scanner_angles)
-        reusable_4dvector.xyzw = (returns[i][1],returns[i][2],returns[i][3],1.0)
+        x = returns[i][1]
+        y = returns[i][2]
+        z = returns[i][3]
 
+        if apply_vertical_correction:
+            z = z + (vertical_corrections_vlp16[laser_id] / 1000)
+
+        reusable_4dvector.xyzw = (x, y, z, 1.0)
+
+        # this is used for the non-noisy xyz coordinates of point
         vt = (world_transformation * reusable_4dvector).xyz
-        v = [returns[i][1],returns[i][2],returns[i][3]]
+
+        # this is used to get the noisy xyz coordinates of point
+        v = [x, y, z]
 
         # make distance noise based on the laser noise array and some gaussian
-        distance_noise =  laser_noise[laser_id] + random.gauss(noise_mu, noise_sigma) 
+        distance_noise = laser_noise[laser_id] + random.gauss(noise_mu, noise_sigma)
 
         # vector length represents the distance between the scanned point and the sensor
         # note: this is the same as the first element in the return array
@@ -316,7 +348,22 @@ def scan_advanced(scanner_object, rotation_speed = 10.0, simulation_fps=24, angl
 
 # This Function creates scans over a range of frames
 
-def scan_range(scanner_object, frame_start, frame_end, filename="/tmp/landscape.evd", frame_time = (1.0/24.0), rotation_speed = 10.0, add_blender_mesh=False, add_noisy_blender_mesh=False, angle_resolution = 0.1728, max_distance = 120.0, noise_mu = 0.0, noise_sigma= 0.02, last_frame = True, world_transformation=Matrix(), output_laser_id_as_color=False):
+def scan_range(scanner_object,
+               frame_start,
+               frame_end,
+               filename="/tmp/landscape.evd",
+               frame_time = (1.0/24.0),
+               rotation_speed = 10.0,
+               add_blender_mesh=False,
+               add_noisy_blender_mesh=False,
+               angle_resolution = 0.1728,
+               max_distance = 120.0,
+               noise_mu = 0.0,
+               noise_sigma= 0.02,
+               last_frame = True,
+               world_transformation=Matrix(),
+               output_laser_id_as_color=False,
+               apply_vertical_correction=False):
     start_time = time.time()
 
     angle_per_second = 360.0 * rotation_speed
@@ -335,7 +382,8 @@ def scan_range(scanner_object, frame_start, frame_end, filename="/tmp/landscape.
                     frame_time=frame_time, simulation_time = float(i)*frame_time,
                     max_distance=max_distance, noise_mu = noise_mu, 
                     noise_sigma=noise_sigma, world_transformation=world_transformation,
-                    output_laser_id_as_color=output_laser_id_as_color)
+                    output_laser_id_as_color=output_laser_id_as_color,
+                    apply_vertical_correction=apply_vertical_correction)
 
                 if not ok:
                     break

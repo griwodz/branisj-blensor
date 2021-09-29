@@ -288,9 +288,8 @@ def scan_advanced(scanner_object,
         # make distance noise based on the laser noise array and some gaussian
         distance_noise = laser_noise[laser_id] + random.gauss(noise_mu, noise_sigma)
 
-        # vector length represents the distance between the scanned point and the sensor
-        # note: this is the same as the first element in the return array
-        # so why is it computed again??
+        # vector length obviously represents the distance between the scanned point and the sensor
+        # note: this is already present at returns[i][0] so why is it computed again??
         vector_length = math.sqrt(v[0]**2+v[1]**2+v[2]**2)
 
         # normalize the vector
@@ -372,6 +371,9 @@ def scan_range(scanner_object,
     try:
         for i in range(frame_start,frame_end):
                 bpy.context.scene.frame_current = i
+
+                # Randomize the noise levels on every scan
+                randomize_distance_bias(scanner_object)
 
                 ok,start_radians,scan_time = scan_advanced(scanner_object, 
                     rotation_speed=rotation_speed, angle_resolution = angle_resolution, 

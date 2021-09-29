@@ -86,6 +86,7 @@ def addProperties(cType):
     cType.velodyne_output_laser_id_as_color = bpy.props.BoolProperty(default=parameters["output_laser_id_as_color"],
                                                                      name="Output laser id as color",
                                                                      description="If enabled, the laser ids will be returned as the color of a sample")
+    # TODO add the new parameters here as well
 
  
 
@@ -478,6 +479,22 @@ def scan_range(scanner_object,
         evd_file = open(filename,"a")
         evd_file.buffer.write(struct.pack("i",-1))
         evd_file.close()
+
+    with open(f"{os.path.dirname(filename)}/info.txt", "w") as f:
+        info = f"Virtual blensor scan" \
+               f"Time of scan: {time.time()}" \
+               f"Frame start: {frame_start}" \
+               f"Frame end: {frame_end}" \
+               f"Frame time: {frame_time}" \
+               f"Rotation speed: {rotation_speed}" \
+               f"Angle resolution: {angle_resolution}" \
+               f"Max distance: {max_distance}" \
+               f"Noise mu: {noise_mu}" \
+               f"Noise sigma: {noise_sigma}" \
+               f"Output laser id as color: {output_laser_id_as_color}" \
+               f"Apply vertical correction: {apply_vertical_correction}" \
+               f"Add beam divergence: {add_beam_divergence}"
+        f.write(info)
 
 
     end_time = time.time()

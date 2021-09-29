@@ -168,9 +168,74 @@ laser_noise =  [0.023188431056485468, 0.018160539830319688,
                 0.034911820770082327, 0.065682492298063416]
 
 
+# polynomial coefficients for noise stddevs from 1m to 5m distance
+# rows are lasers, index being laser id
+wall_noise_polynomials = list(map(numpy.poly1d, [[1.149959777101233717e-04, -1.447756815982880786e-03, 6.510018018593014509e-03,
+                           -1.223405369518627307e-02, 1.650758676374098829e-02],
+                          [1.020163480950387355e-04, -1.347023637972283002e-03, 6.462602470486273655e-03,
+                           -1.305210838199708477e-02, 1.784158289945754483e-02],
+                          [1.146020230467176357e-04, -1.393072554819377697e-03, 5.792563689378243431e-03,
+                           -9.648997906561112073e-03, 1.417917061964388097e-02],
+                          [8.650362566993354159e-05, -1.135689903779567951e-03, 5.464422232895918725e-03,
+                           -1.136699839596469301e-02, 1.736016550102446182e-02],
+                          [6.389678743342807265e-05, -6.941993600298232816e-04, 2.840338958273228107e-03,
+                           -5.360543336878565573e-03, 1.221417697163846086e-02],
+                          [-2.064130027892076505e-05, 1.114051046576767660e-04, 3.967506880809539439e-04,
+                           -2.847855223363543638e-03, 1.255669917294362052e-02],
+                          [1.307615087548785748e-04, -1.384753774386732975e-03, 5.311792326053499380e-03,
+                           -8.893292093065656434e-03, 1.425053945508668145e-02],
+                          [-2.928430250961752750e-05, 2.854128538385984279e-04, -4.614062349368840002e-04,
+                           -1.716008808146514972e-03, 1.338855253777419992e-02],
+                          [-1.706775798030039947e-04, 1.864701880524312827e-03, -7.000606371725321894e-03,
+                           1.059679020136581468e-02, 4.753019794913990355e-03],
+                          [3.524609483702912711e-05, -2.033979252945443178e-04, 9.407184674376763221e-05,
+                           6.420191853683136557e-04, 9.708296336309190505e-03],
+                          [5.448554694265199405e-05, -6.101548506709004874e-04, 2.350679290365150376e-03,
+                           -3.885635011674578101e-03, 1.159583515524542641e-02],
+                          [2.509069358741303755e-04, -2.745833793134813943e-03, 1.058203324849244474e-02,
+                           -1.699644834767223903e-02, 1.990212497011066908e-02],
+                          [-3.704820516519310788e-06, 7.131632040647030903e-07, 4.317558143171664072e-04,
+                           -2.032816000365457454e-03, 1.143980445336633886e-02],
+                          [-4.204569181146790508e-04, 5.206697969508867867e-03, -2.235770446643961518e-02,
+                           3.812459558982908558e-02, -9.550759026775079361e-03],
+                          [2.231387858012323557e-04, -2.676319546734843950e-03, 1.109950108329610212e-02,
+                           -1.855240578227829173e-02, 1.980410645236000550e-02],
+                          [-6.691732488527129706e-04, 8.524139067866563085e-03, -3.781911863658569267e-02,
+                           6.672331578414059106e-02, -2.545667183248455714e-02]]))
+
+floor_noise_polynomial_coeffs = list(map(numpy.poly1d,[[-5.048115371963505290e-04, 6.443487332502418306e-03, -2.755822559258705451e-02, 4.678398234393036509e-02, -1.495785089947668928e-02],
+                     [-9.545526834978516374e-04, 1.093581811555647404e-02, -4.373225745838945494e-02, 7.253724642323591820e-02, -2.947871228053306966e-02],
+                     [-5.455072723927560088e-04, 6.747101463631922924e-03, -2.909210838740067598e-02, 5.142524170577621179e-02, -1.844382811363584618e-02],
+                     [-9.995979644957279312e-04, 1.143469060900442931e-02, -4.569263627204219608e-02, 7.582041541078338165e-02, -3.164204171591439296e-02],
+                     [-8.863856077704932801e-04, 1.035449654357211390e-02, -4.215516396825260553e-02, 7.013816214188291209e-02, -2.774640409510600869e-02],
+                     [-7.589651808132531589e-04, 8.863025853651378821e-03, -3.654472453878408050e-02, 6.347248692449157514e-02, -2.594166954960746077e-02],
+                     [-8.504010051867004396e-04, 9.925324762449056273e-03, -4.048905515657710147e-02, 6.772132945392388137e-02, -2.613393087775099655e-02],
+                     [-8.090098982174978495e-04, 9.212813231610147979e-03, -3.672620889651094511e-02, 6.121778503530301424e-02, -2.345527906678999269e-02],
+                     [-7.353309693964817833e-04, 8.579048904274454504e-03, -3.528882623908410898e-02, 6.047480810406839769e-02, -2.345062902295019097e-02],
+                     [-1.067629650668973406e-03, 1.218703066328317465e-02, -4.849669060719514341e-02, 8.025101291208461274e-02, -3.434111000309520573e-02],
+                     [-6.620368710142958066e-04, 7.804452173703646869e-03, -3.256030413264018875e-02, 5.701722179959860942e-02, -2.212834531433303942e-02],
+                     [-8.027046984013080358e-04, 9.059668589149815626e-03, -3.577650957903925205e-02, 5.977638796857074471e-02, -2.403865570972986074e-02],
+                     [-7.756165064623434403e-04, 9.040058342914330733e-03, -3.709471264561637477e-02, 6.351020095704701385e-02, -2.495784213739906179e-02],
+                     [-9.148838672119842053e-04, 1.053486479175496163e-02, -4.244120168212644345e-02, 7.176011413054944610e-02, -3.031679372554601029e-02],
+                     [-1.116809761353775021e-03, 1.287132094085439125e-02, -5.173227197391310622e-02, 8.565007483821840406e-02, -3.605725799412751176e-02],
+                     [-7.703254235614598669e-04, 8.875516605196056424e-03, -3.593367461161722787e-02, 6.230828575988874019e-02, -2.710633697060860214e-02]]))
 
 
+def sample_noise(distance, laser_id, noise_mu=0.0):
+    laser_verticals = laser_angles_vlp16
+    laser_ids = range(len(laser_angles_vlp16))
 
+    poly = wall_noise_polynomials[laser_id]
+    # clamp the distance for now as the polynomial
+    # outside of the range measured isn't useful
+    if distance < 1.0:
+        distance = 1.0
+    elif distance > 5.0:
+        distance = 5.0
+
+    sampled_sigma = poly(distance)
+
+    return random.gauss(noise_mu, sampled_sigma)
 
 
 # If the laser noise has to be truely randomize, call this function prior
@@ -206,7 +271,8 @@ def scan_advanced(scanner_object,
                   simulation_time = 0.0,
                   world_transformation=Matrix(),
                   output_laser_id_as_color=False,
-                  apply_vertical_correction=False):
+                  apply_vertical_correction=False,
+                  add_beam_divergence=False):
     
     # First, get the angles for the lasers, depends on the sensor model
     scanner_angles = laser_angles
@@ -243,6 +309,14 @@ def scan_advanced(scanner_object,
     angles = end_angle-start_angle
   
     lines = (end_angle-start_angle)/angle_resolution
+
+    horizontal_beam_divergence = 0.18 # about 3.0mrad (0.18deg)
+    vertical_beam_divergence = 0.09 # about 1.5 mrad (0.09deg)
+
+    if not add_beam_divergence:
+        horizontal_beam_divergence = 0.0
+        vertical_beam_divergence = 0.0
+
     # make a ray for each laser
     ray = Vector([0.0,0.0,0.0])
     for line in range(int(lines)):
@@ -253,8 +327,12 @@ def scan_advanced(scanner_object,
             timestamp = ( (rot_angle-180.0)/angle_resolution) * time_per_step 
             rot_angle = rot_angle%360.0
             ray_info.append([deg2rad(rot_angle), deg2rad(scanner_angles[laser_idx]), timestamp])
+
+            x_rotation = deg2rad(-scanner_angles[laser_idx] + random.uniform(-(vertical_beam_divergence/2), (vertical_beam_divergence/2)))
+            y_rotation = deg2rad(rot_angle + random.uniform(-(horizontal_beam_divergence/2), (horizontal_beam_divergence/2)))
+            z_rotation = 0.0
             
-            rotator = Euler( [deg2rad(-scanner_angles[laser_idx]), deg2rad(rot_angle), 0.0] )
+            rotator = Euler([x_rotation, y_rotation, z_rotation])
             ray.rotate( rotator )
             rays.extend([ray[0],ray[1],ray[2]])
 
@@ -362,7 +440,8 @@ def scan_range(scanner_object,
                last_frame = True,
                world_transformation=Matrix(),
                output_laser_id_as_color=False,
-               apply_vertical_correction=False):
+               apply_vertical_correction=False,
+               add_beam_divergence=False):
     start_time = time.time()
 
     angle_per_second = 360.0 * rotation_speed
@@ -385,7 +464,8 @@ def scan_range(scanner_object,
                     max_distance=max_distance, noise_mu = noise_mu, 
                     noise_sigma=noise_sigma, world_transformation=world_transformation,
                     output_laser_id_as_color=output_laser_id_as_color,
-                    apply_vertical_correction=apply_vertical_correction)
+                    apply_vertical_correction=apply_vertical_correction,
+                    add_beam_divergence=add_beam_divergence)
 
                 if not ok:
                     break

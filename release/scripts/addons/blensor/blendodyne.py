@@ -19,7 +19,8 @@
 import math
 import sys
 import os
-import struct 
+import uuid
+import struct
 import ctypes
 import time 
 import random 
@@ -273,7 +274,8 @@ def scan_advanced(scanner_object,
                   world_transformation=Matrix(),
                   output_laser_id_as_color=False,
                   apply_vertical_correction=False,
-                  add_beam_divergence=False):
+                  add_beam_divergence=False,
+                  depth_map_file=None):
     
     # First, get the angles for the lasers, depends on the sensor model
     scanner_angles = laser_angles
@@ -318,6 +320,8 @@ def scan_advanced(scanner_object,
         horizontal_beam_divergence = 0.0
         vertical_beam_divergence = 0.0
 
+    depth_map_lines = []
+
     # make a ray for each laser
     ray = Vector([0.0,0.0,0.0])
     for line in range(int(lines)):
@@ -325,6 +329,7 @@ def scan_advanced(scanner_object,
             ray.xyz = [0,0,max_distance]
 
             rot_angle = 1e-6 + start_angle+float(line)*angle_resolution + 180.0
+
             timestamp = ( (rot_angle-180.0)/angle_resolution) * time_per_step 
             rot_angle = rot_angle%360.0
             ray_info.append([deg2rad(rot_angle), deg2rad(scanner_angles[laser_idx]), timestamp])
@@ -334,7 +339,7 @@ def scan_advanced(scanner_object,
             z_rotation = 0.0
             
             rotator = Euler([x_rotation, y_rotation, z_rotation])
-            ray.rotate( rotator )
+            ray.rotate(rotator)
             rays.extend([ray[0],ray[1],ray[2]])
 
     returns = blensor.scan_interface.scan_rays(rays, max_distance, inv_scan_x = inv_scan_x, inv_scan_y = inv_scan_y, inv_scan_z = inv_scan_z)
@@ -349,9 +354,11 @@ def scan_advanced(scanner_object,
     for i in range(len(returns)):
         idx = returns[i][-1]
         laser_id = idx % len(scanner_angles)
-        x = returns[i][1]
-        y = returns[i][2]
-        z = returns[i][3]
+
+        R = returns[i][0] # distance
+        x = returns[i][1] # x-coordinate
+        y = returns[i][2] # y-coordinate
+        z = returns[i][3] # z-coordinate
 
         if apply_vertical_correction:
             z = z + (vertical_corrections_vlp16[laser_id] / 1000)
@@ -388,8 +395,11 @@ def scan_advanced(scanner_object,
         else:
             color = returns[i][5]
 
-        evd_storage.addEntry(timestamp = ray_info[idx][2], yaw =(ray_info[idx][0]+math.pi)%(2*math.pi), pitch=ray_info[idx][1], distance=vector_length, distance_noise=vector_length_noise, x=vt[0], y=vt[1], z=vt[2], x_noise=v_noise[0], y_noise=v_noise[1], z_noise=v_noise[2], object_id=returns[i][4], color=color)
+        omega = numpy.arcsin(vt.y / vt.length)
+        alpha = numpy.arcsin(vt.x / (vt.length * numpy.cos(omega)))
+        depth_map_lines.append([R, numpy.rad2deg(omega), numpy.rad2deg(alpha), laser_id])
 
+        evd_storage.addEntry(timestamp = ray_info[idx][2], yaw =(ray_info[idx][0]+math.pi)%(2*math.pi), pitch=ray_info[idx][1], distance=vector_length, distance_noise=vector_length_noise, x=vt[0], y=vt[1], z=vt[2], x_noise=v_noise[0], y_noise=v_noise[1], z_noise=v_noise[2], object_id=returns[i][4], color=color)
 
     current_angle = start_angle+float(float(int(lines))*angle_resolution)
 
@@ -397,6 +407,10 @@ def scan_advanced(scanner_object,
             
     if evd_file:
         evd_storage.appendEvdFile()
+
+    if depth_map_file:
+        depth_map_file.writelines([f"{line[0]} {line[1]} {line[2]}\n" for line in depth_map_lines])
+
 
     if not evd_storage.isEmpty():
         scan_data = numpy.array(evd_storage.buffer)
@@ -442,18 +456,23 @@ def scan_range(scanner_object,
                world_transformation=Matrix(),
                output_laser_id_as_color=False,
                apply_vertical_correction=False,
-               add_beam_divergence=False):
+               add_beam_divergence=False,
+               depth_map=False):
     start_time = time.time()
 
     angle_per_second = 360.0 * rotation_speed
     angle_per_frame = angle_per_second * frame_time
-    
+
+    depth_map_file = None
+    if depth_map:
+        depth_map_file = open(os.path.splitext(filename)[0] + ".depth_map." + str(uuid.uuid4())[:8] + ".txt", "w")
+
     try:
         for i in range(frame_start,frame_end):
                 bpy.context.scene.frame_current = i
 
                 # Randomize the noise levels on every scan
-                randomize_distance_bias(scanner_object)
+                randomize_distance_bias(scanner_object, noise_mu=vlp16_parameters["distance_bias_noise_mu"], noise_sigma=vlp16_parameters["distance_bias_noise_sigma"])
 
                 ok,start_radians,scan_time = scan_advanced(scanner_object, 
                     rotation_speed=rotation_speed, angle_resolution = angle_resolution, 
@@ -466,7 +485,8 @@ def scan_range(scanner_object,
                     noise_sigma=noise_sigma, world_transformation=world_transformation,
                     output_laser_id_as_color=output_laser_id_as_color,
                     apply_vertical_correction=apply_vertical_correction,
-                    add_beam_divergence=add_beam_divergence)
+                    add_beam_divergence=add_beam_divergence,
+                    depth_map_file=depth_map_file)
 
                 if not ok:
                     break
@@ -480,20 +500,25 @@ def scan_range(scanner_object,
         evd_file.buffer.write(struct.pack("i",-1))
         evd_file.close()
 
-    with open(f"{os.path.dirname(filename)}/info.txt", "w") as f:
-        info = f"Virtual blensor scan" \
-               f"Time of scan: {time.time()}" \
-               f"Frame start: {frame_start}" \
-               f"Frame end: {frame_end}" \
-               f"Frame time: {frame_time}" \
-               f"Rotation speed: {rotation_speed}" \
-               f"Angle resolution: {angle_resolution}" \
-               f"Max distance: {max_distance}" \
-               f"Noise mu: {noise_mu}" \
-               f"Noise sigma: {noise_sigma}" \
-               f"Output laser id as color: {output_laser_id_as_color}" \
-               f"Apply vertical correction: {apply_vertical_correction}" \
-               f"Add beam divergence: {add_beam_divergence}"
+    if depth_map:
+        depth_map_file.close()
+
+    info_file = filename.replace(".evd", ".info")
+    with open(info_file, "w") as f:
+        info = f"Virtual blensor scan\n" \
+               f"Time of scan: {time.time()}\n" \
+               f"Sensor location: {scanner_object.location}\n" \
+               f"Frame start: {frame_start}\n" \
+               f"Frame end: {frame_end}\n" \
+               f"Frame time: {frame_time}\n" \
+               f"Rotation speed: {rotation_speed}\n" \
+               f"Angle resolution: {angle_resolution}\n" \
+               f"Max distance: {max_distance}\n" \
+               f"Noise mu: {noise_mu}\n" \
+               f"Noise sigma: {noise_sigma}\n" \
+               f"Output laser id as color: {output_laser_id_as_color}\n" \
+               f"Apply vertical correction: {apply_vertical_correction}\n" \
+               f"Add beam divergence: {add_beam_divergence}\n"
         f.write(info)
 
 

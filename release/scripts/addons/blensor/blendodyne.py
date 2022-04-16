@@ -22,8 +22,8 @@ import os
 import uuid
 import struct
 import ctypes
-import time 
-import random 
+import time
+import random
 import bpy
 from mathutils import Vector, Euler, Matrix
 
@@ -77,11 +77,11 @@ def addProperties(cType):
     cType.velodyne_db_noise_sigma = bpy.props.FloatProperty( name = "DB Noise sigma", default = parameters["distance_bias_noise_sigma"], description = "The sigma of the gaussian noise" )
     cType.velodyne_start_angle = bpy.props.FloatProperty( name = "Start angle", default = parameters["start_angle"], description = "The angle at which the scan is started" )
     cType.velodyne_end_angle = bpy.props.FloatProperty( name = "End angle", default = parameters["end_angle"], description = "The angle at which the scan is stopped" )
- 
+
     cType.velodyne_ref_dist = bpy.props.FloatProperty( name = "Reflectivity Distance", default = parameters["reflectivity_distance"], description = "Objects closer than reflectivity distance are independent of their reflectivity" )
     cType.velodyne_ref_limit = bpy.props.FloatProperty( name = "Reflectivity Limit", default = parameters["reflectivity_limit"], description = "Minimum reflectivity for objects at the reflectivity distance" )
     cType.velodyne_ref_slope = bpy.props.FloatProperty( name = "Reflectivity Slope", default = parameters["reflectivity_slope"], description = "Slope of the reflectivity limit curve" )
- 
+
     cType.velodyne_noise_type = bpy.props.EnumProperty( items= parameters["noise_types"], name = "Noise distribution", description = "Which noise model to use for the distance bias" )
     cType.velodyne_model = bpy.props.EnumProperty( items= parameters["models"], name = "Model", description = "Velodyne Model" )
     cType.velodyne_output_laser_id_as_color = bpy.props.BoolProperty(default=parameters["output_laser_id_as_color"],
@@ -89,7 +89,7 @@ def addProperties(cType):
                                                                      description="If enabled, the laser ids will be returned as the color of a sample")
     # TODO add the new parameters here as well
 
- 
+
 
 
 def deg2rad(deg):
@@ -128,9 +128,6 @@ laser_angles_32 = [-30.67, -9.33, -29.33, -8.00, -28.00, -6.66, -26.66,
 # laser ID is index in list
 laser_angles_vlp16 = [-15, 1, -13, 3, -11, 5, -9, 7, -7, 9, -5, 11, -3, 13, -1, 15]
 
-
-# in mm, see VLP-16 manual, these should be added to the z-axis
-vertical_corrections_vlp16 = [11.2, -0.7, 9.7, -2.2, 8.1, -3.7, 6.6, -5.1, 5.1, -6.6, 3.7, -8.1, 2.2, -9.7, 0.7, -11.2]
 
 
 # The laser noise is initialized with a fixed randomized array to increase
@@ -273,7 +270,6 @@ def scan_advanced(scanner_object,
                   simulation_time = 0.0,
                   world_transformation=Matrix(),
                   output_laser_id_as_color=False,
-                  apply_vertical_correction=False,
                   add_beam_divergence=False,
                   depth_map_file=None):
     
@@ -359,9 +355,6 @@ def scan_advanced(scanner_object,
         x = returns[i][1] # x-coordinate
         y = returns[i][2] # y-coordinate
         z = returns[i][3] # z-coordinate
-
-        if apply_vertical_correction:
-            z = z + (vertical_corrections_vlp16[laser_id] / 1000)
 
         reusable_4dvector.xyzw = (x, y, z, 1.0)
 
@@ -455,7 +448,6 @@ def scan_range(scanner_object,
                last_frame = True,
                world_transformation=Matrix(),
                output_laser_id_as_color=False,
-               apply_vertical_correction=False,
                add_beam_divergence=False,
                depth_map=False):
     start_time = time.time()
@@ -484,7 +476,6 @@ def scan_range(scanner_object,
                     max_distance=max_distance, noise_mu = noise_mu, 
                     noise_sigma=noise_sigma, world_transformation=world_transformation,
                     output_laser_id_as_color=output_laser_id_as_color,
-                    apply_vertical_correction=apply_vertical_correction,
                     add_beam_divergence=add_beam_divergence,
                     depth_map_file=depth_map_file)
 
@@ -517,7 +508,6 @@ def scan_range(scanner_object,
                f"Noise mu: {noise_mu}\n" \
                f"Noise sigma: {noise_sigma}\n" \
                f"Output laser id as color: {output_laser_id_as_color}\n" \
-               f"Apply vertical correction: {apply_vertical_correction}\n" \
                f"Add beam divergence: {add_beam_divergence}\n"
         f.write(info)
 

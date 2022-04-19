@@ -20,7 +20,7 @@ except:
 """The number of elements per return depends on the version of the blensor
    patch
 """
-ELEMENTS_PER_RETURN = 8
+ELEMENTS_PER_RETURN = 9
 SIZEOF_FLOAT = 4
 
 """ rays is an array of vectors that describe the laser direction and also the
@@ -93,6 +93,7 @@ def scan_rays(rays, max_distance, ray_origins=False, keep_render_setup=False, do
               ret.append((returns_buffer[idx*ELEMENTS_PER_RETURN+5],
                           returns_buffer[idx*ELEMENTS_PER_RETURN+6],
                           returns_buffer[idx*ELEMENTS_PER_RETURN+7])) # RGB Value of the material
+              ret.append(returns_buffer[idx*ELEMENTS_PER_RETURN+8]) # incidence angle
               ret.append(idx) # Store the index per return as the last element
               array_of_returns.append(ret)
     #except TypeError as e:

@@ -42,7 +42,7 @@ extern void shade_ray(struct Isect *is, struct ShadeInput *shi, struct ShadeResu
 
 //How many fields are returned from the cast rays function
 #define BLENSOR_INTERSECTION_RETURNS 15
-#define BLENSOR_ELEMENTS_PER_RETURN 8
+#define BLENSOR_ELEMENTS_PER_RETURN 9
 
 /* Return the value of the id property or the defaultvalue if the id property
  * does not exist
@@ -496,6 +496,9 @@ static void do_blensor(Render *re, float *rays, int raycount, int elements_per_r
         returns[idx*BLENSOR_ELEMENTS_PER_RETURN+5] = intersection[12]; //r-value
         returns[idx*BLENSOR_ELEMENTS_PER_RETURN+6] = intersection[13]; //g-value
         returns[idx*BLENSOR_ELEMENTS_PER_RETURN+7] = intersection[14]; //b-value
+        float start_ray[] = {vx, vy, vz};
+        float incidence_angle = angle_v3v3(start_ray, &intersection[7]);
+        returns[idx*BLENSOR_ELEMENTS_PER_RETURN+8] = incidence_angle; // incidence angle
 
         // it looks like intersection[7, 8, 9] is the face normal
         

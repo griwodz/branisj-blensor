@@ -52,11 +52,11 @@ vlp16_parameters = {
     "rotation_speed": 5, # in Hz, equivalent to 300 RPM
     "max_dist": 100,
     "noise_mu": 0.0,
-    "noise_sigma": 0.014,
+    "noise_sigma": 0.01,
     "start_angle": 0,
     "end_angle": 360,
     "distance_bias_noise_mu": 0,
-    "distance_bias_noise_sigma": 0.02,
+    "distance_bias_noise_sigma": 0.014,
     "reflectivity_distance": 50,
     "reflectivity_limit": 0.1,
     "reflectivity_slope": 0.01,

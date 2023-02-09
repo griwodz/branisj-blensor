@@ -88,7 +88,7 @@ static void fill_all_channels(T *pixels, int width, int height, int components, 
 
 }
 
-static ImBuf *imb_oiio_load_image(ImageInput *in, int width, int height, int components, int flags, bool is_alpha)
+static ImBuf *imb_oiio_load_image( std::unique_ptr<ImageInput>&  in, int width, int height, int components, int flags, bool is_alpha)
 {
 	ImBuf *ibuf;
 	int scanlinesize = width * components * sizeof(uchar);
@@ -127,7 +127,7 @@ static ImBuf *imb_oiio_load_image(ImageInput *in, int width, int height, int com
 	return ibuf;
 }
 
-static ImBuf *imb_oiio_load_image_float(ImageInput *in, int width, int height, int components, int flags, bool is_alpha)
+static ImBuf *imb_oiio_load_image_float( std::unique_ptr<ImageInput>& in, int width, int height, int components, int flags, bool is_alpha)
 {
 	ImBuf *ibuf;
 	int scanlinesize = width * components * sizeof(float);
@@ -223,7 +223,7 @@ struct ImBuf *imb_load_photoshop(const char *filename, int flags, char colorspac
 	if (!in->open(filename, spec, config)) {
 		std::cerr << __func__ << ": ImageInput::open() failed:" << std::endl
 		          << in->geterror() << std::endl;
-                in.reset():
+                in.reset();
 		return NULL;
 	}
 

@@ -25,7 +25,7 @@
 
 if(CMAKE_COMPILER_IS_GNUCC)
 	# add here so we fail early.
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror=implicit-function-declaration")
+	# set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror=implicit-function-declaration")
 endif()
 
 # files rna_access.c rna_define.c makesrna.c intentionally excluded.

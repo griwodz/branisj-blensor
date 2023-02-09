@@ -56,5 +56,13 @@ Py_LOCAL_INLINE(int) PyList_APPEND(PyObject *op, PyObject *v)
 }
 #endif
 
+#if PY_VERSION_HEX >= 0x0308000
+# define Py_BUILD_CORE
+# undef HAVE_STD_ATOMIC
+# include "internal/pycore_pystate.h"
+# undef Py_BUILD_CORE
+# define HAVE_STD_ATOMIC
+#endif
+
 #endif  /* __PYTHON_UTILDEFINES_H__ */
 

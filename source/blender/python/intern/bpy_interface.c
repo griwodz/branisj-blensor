@@ -93,6 +93,14 @@ static double  bpy_timer_run;   /* time for each python script run */
 static double  bpy_timer_run_tot;   /* accumulate python runs */
 #endif
 
+#if PY_VERSION_HEX >= 0x0308000
+# define Py_BUILD_CORE
+# undef HAVE_STD_ATOMIC
+# include "internal/pycore_pystate.h"
+# undef Py_BUILD_CORE
+# define HAVE_STD_ATOMIC
+#endif
+
 /* use for updating while a python script runs - in case of file load */
 void BPY_context_update(bContext *C)
 {

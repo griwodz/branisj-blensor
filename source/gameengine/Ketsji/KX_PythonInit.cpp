@@ -42,6 +42,14 @@
 #  endif
 #  include <Python.h>
 
+#if PY_VERSION_HEX >= 0x0308000
+# define Py_BUILD_CORE
+# undef HAVE_STD_ATOMIC
+# include "internal/pycore_pystate.h"
+# undef Py_BUILD_CORE
+# define HAVE_STD_ATOMIC
+#endif
+
 extern "C" {
 	#  include "BLI_utildefines.h"
 	#  include "python_utildefines.h"

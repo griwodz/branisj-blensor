@@ -1,5 +1,7 @@
 # Blensor
 
-A fork of the BlenSor repository. In this repo I'm expanding the the VLP-16 sensor simulation capabilities for use in my Master thesis project. See https://github.uio.no/branisj/thesis for the main repository.
+A fork of the BlenSor repository. In this repo the VLP-16 sensor simulation capabilities are extended to simulate a more realistic noise for LiDAR scans.
 
 The scanning code can be found in the [blendodyne.py](release/scripts/addons/blensor/blendodyne.py) file. 
+
+For build instructions, follow the BlenSor build instructions available at the [blender Website](https://wiki.blender.org/wiki/Building_Blender).

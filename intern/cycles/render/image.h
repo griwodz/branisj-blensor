@@ -137,7 +137,7 @@ private:
 	void *osl_texture_system;
 
 	bool file_load_image_generic(Image *img,
-	                             ImageInput **in,
+	                             std::unique_ptr<ImageInput> *in,
 	                             int &width,
 	                             int &height,
 	                             int &depth,

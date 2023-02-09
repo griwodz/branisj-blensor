@@ -197,7 +197,7 @@ int imb_save_photoshop(struct ImBuf *ibuf, const char * /*name*/, int flags)
 
 struct ImBuf *imb_load_photoshop(const char *filename, int flags, char colorspace[IM_MAX_SPACE])
 {
-	ImageInput *in = NULL;
+	std::unique_ptr<ImageInput> in;
 	struct ImBuf *ibuf = NULL;
 	int width, height, components;
 	bool is_float, is_alpha;
@@ -223,7 +223,7 @@ struct ImBuf *imb_load_photoshop(const char *filename, int flags, char colorspac
 	if (!in->open(filename, spec, config)) {
 		std::cerr << __func__ << ": ImageInput::open() failed:" << std::endl
 		          << in->geterror() << std::endl;
-		delete in;
+                in.reset():
 		return NULL;
 	}
 
@@ -249,7 +249,7 @@ struct ImBuf *imb_load_photoshop(const char *filename, int flags, char colorspac
 	if (!(components >= 1 && components <= 4)) {
 		if (in) {
 			in->close();
-			delete in;
+			in.reset();
 		}
 		return NULL;
 	}
@@ -261,7 +261,7 @@ struct ImBuf *imb_load_photoshop(const char *filename, int flags, char colorspac
 
 	if (in) {
 		in->close();
-		delete in;
+		in.reset();
 	}
 
 	if (!ibuf)

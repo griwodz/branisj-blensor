@@ -129,7 +129,7 @@ bool ImageManager::get_image_metadata(const string& filename,
 		return false;
 	}
 
-	ImageInput *in = ImageInput::create(filename);
+	std::unique_ptr<ImageInput> in = ImageInput::create(filename);
 
 	if(!in) {
 		return false;
@@ -137,7 +137,6 @@ bool ImageManager::get_image_metadata(const string& filename,
 
 	ImageSpec spec;
 	if(!in->open(filename, spec)) {
-		delete in;
 		return false;
 	}
 
@@ -194,7 +193,6 @@ bool ImageManager::get_image_metadata(const string& filename,
 	}
 
 	in->close();
-	delete in;
 
 	return true;
 }
@@ -417,7 +415,7 @@ void ImageManager::tag_reload_image(const string& filename,
 }
 
 bool ImageManager::file_load_image_generic(Image *img,
-                                           ImageInput **in,
+                                           std::unique_ptr<ImageInput> *in,
                                            int &width,
                                            int &height,
                                            int &depth,
@@ -445,8 +443,7 @@ bool ImageManager::file_load_image_generic(Image *img,
 			config.attribute("oiio:UnassociatedAlpha", 1);
 
 		if(!(*in)->open(img->filename, spec, config)) {
-			delete *in;
-			*in = NULL;
+			in->reset();
 			return false;
 		}
 
@@ -473,8 +470,7 @@ bool ImageManager::file_load_image_generic(Image *img,
 	if(!(components >= 1 && components <= 4)) {
 		if(*in) {
 			(*in)->close();
-			delete *in;
-			*in = NULL;
+			in->reset();
 		}
 
 		return false;
@@ -492,7 +488,7 @@ bool ImageManager::file_load_image(Image *img,
                                    device_vector<DeviceType>& tex_img)
 {
 	const StorageType alpha_one = (FileFormat == TypeDesc::UINT8)? 255 : 1;
-	ImageInput *in = NULL;
+	std::unique_ptr<ImageInput> in;
 	int width, height, depth, components;
 	if(!file_load_image_generic(img, &in, width, height, depth, components)) {
 		return false;
@@ -549,7 +545,7 @@ bool ImageManager::file_load_image(Image *img,
 		}
 		cmyk = strcmp(in->format_name(), "jpeg") == 0 && components == 4;
 		in->close();
-		delete in;
+		in.reset();
 	}
 	else {
 		if(FileFormat == TypeDesc::FLOAT) {

@@ -678,7 +678,7 @@ bool BLI_path_suffix(char *string, size_t maxlen, const char *suffix, const char
  */
 bool BLI_parent_dir(char *path)
 {
-	const char parent_dir[] = {'.', '.', SEP, '\0'}; /* "../" or "..\\" */
+	const char parent_dir[] = {'.', '.', NORMAL_SEP, '\0'}; /* "../" or "..\\" */
 	char tmp[FILE_MAX + 4];
 
 	BLI_join_dirfile(tmp, sizeof(tmp), path, parent_dir);
@@ -1531,8 +1531,8 @@ void BLI_path_append(char *__restrict dst, const size_t maxlen, const char *__re
 	size_t dirlen = BLI_strnlen(dst, maxlen);
 
 	/* inline BLI_add_slash */
-	if ((dirlen > 0) && (dst[dirlen - 1] != SEP)) {
-		dst[dirlen++] = SEP;
+	if ((dirlen > 0) && (dst[dirlen - 1] != NORMAL_SEP)) {
+		dst[dirlen++] = NORMAL_SEP;
 		dst[dirlen] = '\0';
 	}
 
@@ -1568,8 +1568,8 @@ void BLI_join_dirfile(char *__restrict dst, const size_t maxlen, const char *__r
 	}
 
 	/* inline BLI_add_slash */
-	if ((dirlen > 0) && !ELEM(dst[dirlen - 1], SEP, ALTSEP)) {
-		dst[dirlen++] = SEP;
+	if ((dirlen > 0) && !ELEM(dst[dirlen - 1], NORMAL_SEP, ALTSEP)) {
+		dst[dirlen++] = NORMAL_SEP;
 		dst[dirlen] = '\0';
 	}
 
@@ -1604,7 +1604,7 @@ size_t BLI_path_join(char *__restrict dst, const size_t dst_len, const char *pat
 	bool has_trailing_slash = false;
 	if (ofs != 0) {
 		size_t len = ofs;
-		while ((len != 0) && ELEM(path[len - 1], SEP, ALTSEP)) {
+		while ((len != 0) && ELEM(path[len - 1], NORMAL_SEP, ALTSEP)) {
 			len -= 1;
 		}
 		if (len != 0) {
@@ -1618,19 +1618,19 @@ size_t BLI_path_join(char *__restrict dst, const size_t dst_len, const char *pat
 	while ((path = (const char *) va_arg(args, const char *))) {
 		has_trailing_slash = false;
 		const char *path_init = path;
-		while (ELEM(path[0], SEP, ALTSEP)) {
+		while (ELEM(path[0], NORMAL_SEP, ALTSEP)) {
 			path++;
 		}
 		size_t len = strlen(path);
 		if (len != 0) {
-			while ((len != 0) && ELEM(path[len - 1], SEP, ALTSEP)) {
+			while ((len != 0) && ELEM(path[len - 1], NORMAL_SEP, ALTSEP)) {
 				len -= 1;
 			}
 
 			if (len != 0) {
 				/* the very first path may have a slash at the end */
-				if (ofs && !ELEM(dst[ofs - 1], SEP, ALTSEP)) {
-					dst[ofs++] = SEP;
+				if (ofs && !ELEM(dst[ofs - 1], NORMAL_SEP, ALTSEP)) {
+					dst[ofs++] = NORMAL_SEP;
 					if (ofs == dst_last) {
 						break;
 					}
@@ -1653,8 +1653,8 @@ size_t BLI_path_join(char *__restrict dst, const size_t dst_len, const char *pat
 	va_end(args);
 
 	if (has_trailing_slash) {
-		if ((ofs != dst_last) && (ofs != 0) && (ELEM(dst[ofs - 1], SEP, ALTSEP) == 0)) {
-			dst[ofs++] = SEP;
+		if ((ofs != dst_last) && (ofs != 0) && (ELEM(dst[ofs - 1], NORMAL_SEP, ALTSEP) == 0)) {
+			dst[ofs++] = NORMAL_SEP;
 		}
 	}
 
@@ -1693,7 +1693,7 @@ bool BLI_path_name_at_index(const char *path, const int index, int *r_offset, in
 		int i = 0;
 		while (true) {
 			const char c = path[i];
-			if (ELEM(c, SEP, ALTSEP, '\0')) {
+			if (ELEM(c, NORMAL_SEP, ALTSEP, '\0')) {
 				if (prev + 1 != i) {
 					prev += 1;
 					if (index_step == index) {
@@ -1720,7 +1720,7 @@ bool BLI_path_name_at_index(const char *path, const int index, int *r_offset, in
 		int i = prev - 1;
 		while (true) {
 			const char c = i >= 0 ? path[i] : '\0';
-			if (ELEM(c, SEP, ALTSEP, '\0')) {
+			if (ELEM(c, NORMAL_SEP, ALTSEP, '\0')) {
 				if (prev - 1 != i) {
 					i += 1;
 					if (index_step == index) {
@@ -1907,8 +1907,8 @@ const char *BLI_last_slash(const char *string)
 int BLI_add_slash(char *string)
 {
 	int len = strlen(string);
-	if (len == 0 || string[len - 1] != SEP) {
-		string[len] = SEP;
+	if (len == 0 || string[len - 1] != NORMAL_SEP) {
+		string[len] = NORMAL_SEP;
 		string[len + 1] = '\0';
 		return len + 1;
 	}
@@ -1922,7 +1922,7 @@ void BLI_del_slash(char *string)
 {
 	int len = strlen(string);
 	while (len) {
-		if (string[len - 1] == SEP) {
+		if (string[len - 1] == NORMAL_SEP) {
 			string[len - 1] = '\0';
 			len--;
 		}

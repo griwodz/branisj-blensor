@@ -141,12 +141,12 @@ bool BLI_path_suffix(char *string, size_t maxlen, const char *suffix, const char
 #endif
 
 #ifdef WIN32
-#  define SEP        '\\'
+#  define NORMAL_SEP        '\\'
 #  define ALTSEP     '/'
 #  define SEP_STR    "\\"
 #  define ALTSEP_STR "/"
 #else
-#  define SEP        '/'
+#  define NORMAL_SEP        '/'
 #  define ALTSEP     '\\'
 #  define SEP_STR    "/"
 #  define ALTSEP_STR "\\"

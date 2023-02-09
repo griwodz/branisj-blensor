@@ -129,7 +129,7 @@ void bpy_import_main_extra_remove(struct Main *maggie)
 /* returns a dummy filename for a textblock so we can tell what file a text block comes from */
 void bpy_text_filename_get(char *fn, size_t fn_len, Text *text)
 {
-	BLI_snprintf(fn, fn_len, "%s%c%s", ID_BLEND_PATH(bpy_import_main, &text->id), SEP, text->id.name + 2);
+	BLI_snprintf(fn, fn_len, "%s%c%s", ID_BLEND_PATH(bpy_import_main, &text->id), NORMAL_SEP, text->id.name + 2);
 }
 
 bool bpy_text_compile(Text *text)
